@@ -14,7 +14,8 @@ defmodule Clock.Application do
       [
         # Children for all targets
         ServoKit,
-        Clock.Display
+        Clock.Display,
+        Clock
       ] ++ children(target())
 
     Supervisor.start_link(children, opts)

@@ -1,25 +1,19 @@
 defmodule Clock do
+  use Task, restart: :permanent
+
   alias Clock.Display
 
-  def test() do
-    Display.set_to_num(0)
-    :timer.sleep(1000)
-    Display.set_to_num(1)
-    :timer.sleep(1000)
-    Display.set_to_num(2)
-    :timer.sleep(1000)
-    Display.set_to_num(3)
-    :timer.sleep(1000)
-    Display.set_to_num(4)
-    :timer.sleep(1000)
-    Display.set_to_num(5)
-    :timer.sleep(1000)
-    Display.set_to_num(6)
-    :timer.sleep(1000)
-    Display.set_to_num(7)
-    :timer.sleep(1000)
-    Display.set_to_num(8)
-    :timer.sleep(1000)
-    Display.set_to_num(9)
+  def start_link(_) do
+    Task.start_link(__MODULE__, :run, [])
+  end
+
+  def run() do
+    %{minute: minute, second: second, microsecond: {microsecond, _}} = Time.utc_now()
+    Display.set_to_num(rem(minute, 10))
+    time_to_wait_seconds = 60 - second - 1
+    time_to_wait_micro = 1_000_000 - microsecond
+    time_to_wait_milliseconds = time_to_wait_seconds * 1000 + ceil(time_to_wait_micro / 1000)
+    :timer.sleep(time_to_wait_milliseconds)
+    run()
   end
 end

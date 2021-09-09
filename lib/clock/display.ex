@@ -45,7 +45,7 @@ defmodule Clock.Display do
     state
     |> Enum.with_index()
     |> Enum.each(fn {n, ch} ->
-      (n * 90) + 45
+      (n * 90 + 45)
       |> angle_to_duty_cycle()
       |> ServoKit.set_pwm_duty_cycle(ch: ch)
     end)

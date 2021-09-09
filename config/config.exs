@@ -26,6 +26,12 @@ config :nerves, source_date_epoch: "1631069664"
 
 config :logger, backends: [RingLogger]
 
+config :vintage_net,
+  regulatory_domain: "US",
+  config: [
+    {"wlan0", %{type: VintageNetWiFi}}
+  ]
+
 if Mix.target() == :host or Mix.target() == :"" do
   import_config "host.exs"
 else
