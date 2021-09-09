@@ -19,10 +19,9 @@ defmodule Clock.Display do
   end
 
   @impl true
-  def handle_cast({:set, :num, num}, _state) do
-    new_state = clock(num)
-    set_to(new_state)
-    {:noreply, new_state}
+  def handle_cast({:set, state}, _state) do
+    set_to(state)
+    {:noreply, state}
   end
 
   @impl true
@@ -30,14 +29,14 @@ defmodule Clock.Display do
     {:reply, state, state}
   end
 
-  @spec get_state() :: state
-  def get_state() do
+  @spec get() :: state
+  def get() do
     GenServer.call(__MODULE__, :get)
   end
 
-  @spec set_to_num(0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) :: :ok
-  def set_to_num(num) do
-    GenServer.cast(__MODULE__, {:set, :num, num})
+  @spec set(state) :: :ok
+  def set(state) do
+    GenServer.cast(__MODULE__, {:set, state})
   end
 
   @spec set_to(state) :: :ok
@@ -53,15 +52,4 @@ defmodule Clock.Display do
 
   defp angle_to_duty_cycle(angle),
     do: angle |> ServoKit.map({@min_angle, @max_angle}, {@min_duty_cycle, @max_duty_cycle})
-
-  defp clock(0), do: [1, 1, 1, 0, 1, 1, 1]
-  defp clock(1), do: [0, 0, 1, 0, 0, 1, 0]
-  defp clock(2), do: [1, 0, 1, 1, 1, 0, 1]
-  defp clock(3), do: [1, 0, 1, 1, 0, 1, 1]
-  defp clock(4), do: [0, 1, 1, 1, 0, 1, 0]
-  defp clock(5), do: [1, 1, 0, 1, 0, 1, 1]
-  defp clock(6), do: [1, 1, 0, 1, 1, 1, 1]
-  defp clock(7), do: [1, 0, 1, 0, 0, 1, 0]
-  defp clock(8), do: [1, 1, 1, 1, 1, 1, 1]
-  defp clock(9), do: [1, 1, 1, 1, 0, 1, 0]
 end
