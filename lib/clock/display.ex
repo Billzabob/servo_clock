@@ -33,25 +33,51 @@ defmodule Clock.Display do
 
   @impl true
   def handle_cast({:set, end_state, milliseconds}, start_state) do
-    start_time = System.monotonic_time(:millisecond)
-    end_time = start_time + milliseconds
-    run(start_state, end_state, start_time, end_time, start_time)
+    end_state = display(start_state, end_state, milliseconds)
     {:noreply, end_state}
   end
 
-  defp run(start_state, end_state, start_time, end_time, current_time)
+  defp display(start_state, end_state, milliseconds) do
+    start_time = System.monotonic_time(:millisecond)
+    end_time = start_time + milliseconds
+
+    end_state =
+      end_state
+      |> Enum.zip(start_state)
+      |> Enum.map(fn {e, s} -> if e, do: e, else: s end)
+
+    if would_collide?(start_state, end_state) do
+      # Moves the sides out of the way, moves the middle to its final position, continue
+      display(start_state, [nil, 0, 0, nil, nil, nil, nil], milliseconds)
+      |> display([nil, nil, nil, Enum.at(end_state, 3), nil, nil, nil], milliseconds)
+      |> display(end_state, start_time, end_time, start_time)
+    else
+      display(start_state, end_state, start_time, end_time, start_time)
+    end
+  end
+
+  defp display(start_state, end_state, start_time, end_time, current_time)
        when current_time <= end_time do
     start_state
     |> Enum.zip(end_state)
-    |> Enum.map(fn {c, n} -> map(current_time, {start_time, end_time}, {c, n}) end)
+    |> Enum.map(fn {c, n} ->
+      map(current_time, {start_time, end_time}, {c, n})
+    end)
     |> set_to()
 
     current_time = System.monotonic_time(:millisecond)
-    run(start_state, end_state, start_time, end_time, current_time)
+    display(start_state, end_state, start_time, end_time, current_time)
   end
 
-  defp run(_start_state, end_state, _start_time, _end_time, _current_time) do
+  defp display(_start_state, end_state, _start_time, _end_time, _current_time) do
     set_to(end_state)
+    end_state
+  end
+
+  defp would_collide?(start_state, end_state) do
+    Enum.at(start_state, 3) != Enum.at(end_state, 3) &&
+      ((Enum.at(start_state, 1) == 1 && Enum.at(end_state, 1) == 1) ||
+         (Enum.at(start_state, 2) == 1 && Enum.at(end_state, 2) == 1))
   end
 
   @impl true
