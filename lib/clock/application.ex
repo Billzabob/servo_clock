@@ -13,7 +13,9 @@ defmodule Clock.Application do
     children =
       [
         # Children for all targets
-        ServoKit,
+        Supervisor.child_spec({ServoKit, name: ServoKit2, address: 0x41}, id: ServoKit2),
+        Supervisor.child_spec({ServoKit, name: ServoKit1, address: 0x40}, id: ServoKit1),
+        Clock.Calibration,
         Clock.Display,
         Clock
       ] ++ children(target())

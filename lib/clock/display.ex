@@ -1,6 +1,8 @@
 defmodule Clock.Display do
   use GenServer
 
+  alias Clock.Calibration
+
   require Logger
 
   @min_duty_cycle 2.7
@@ -22,6 +24,10 @@ defmodule Clock.Display do
   @spec set(state, integer) :: :ok
   def set(state, milliseconds \\ 300) do
     GenServer.cast(__MODULE__, {:set, state, milliseconds})
+  end
+
+  def delay(milliseconds \\ 300) do
+    GenServer.cast(__MODULE__, {:set, List.duplicate(nil, 7), milliseconds})
   end
 
   @impl true
@@ -50,7 +56,7 @@ defmodule Clock.Display do
       # Moves the sides out of the way, moves the middle to its final position, continue
       display(start_state, [nil, 0, 0, nil, nil, nil, nil], milliseconds)
       |> display([nil, nil, nil, Enum.at(end_state, 3), nil, nil, nil], milliseconds)
-      |> display(end_state, start_time, end_time, start_time)
+      |> display(end_state, milliseconds)
     else
       display(start_state, end_state, start_time, end_time, start_time)
     end
@@ -86,14 +92,27 @@ defmodule Clock.Display do
   end
 
   @spec set_to(state) :: :ok
-  defp set_to(state) do
+  def set_to(state) do
     state
+    |> invert_some()
+    |> Enum.map(fn n -> n * 90 + 45 end)
+    |> with_calibration()
     |> Enum.with_index()
     |> Enum.each(fn {n, ch} ->
-      (n * 90 + 45)
-      |> angle_to_duty_cycle()
-      |> ServoKit.set_pwm_duty_cycle(ch: ch)
+      ServoKit.set_pwm_duty_cycle(ServoKit1, angle_to_duty_cycle(n), ch: ch)
     end)
+  end
+
+  def invert_some(state) do
+    state
+    |> List.update_at(1, fn _ -> 1 - Enum.at(state, 1) end)
+    |> List.update_at(5, fn _ -> 1 - Enum.at(state, 5) end)
+    |> List.update_at(6, fn _ -> 1 - Enum.at(state, 6) end)
+  end
+
+  defp with_calibration(state) do
+    offsets = Calibration.get_offsets()
+    Enum.zip_with(state, offsets, &+/2)
   end
 
   defp angle_to_duty_cycle(angle),
