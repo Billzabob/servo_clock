@@ -1,83 +1,24 @@
 defmodule Clock.Animator do
-  alias Clock.Display
+  import Clock.Display
 
-  def animate(time) do
-    Display.set(clock(time))
+  require Logger
+
+  def set_time(hour, minute) do
+    Logger.info("Setting time to #{hour}:#{minute}")
+    set(D4, hour |> div(10) |> digit())
+    set(D3, hour |> rem(10) |> digit())
+    set(D2, minute |> div(10) |> digit())
+    set(D1, minute |> rem(10) |> digit())
   end
 
-  def clock(0), do: [1, 1, 1, 0, 1, 1, 1]
-  def clock(1), do: [0, 0, 1, 0, 0, 1, 0]
-  def clock(2), do: [1, 0, 1, 1, 1, 0, 1]
-  def clock(3), do: [1, 0, 1, 1, 0, 1, 1]
-  def clock(4), do: [0, 1, 1, 1, 0, 1, 0]
-  def clock(5), do: [1, 1, 0, 1, 0, 1, 1]
-  def clock(6), do: [1, 1, 0, 1, 1, 1, 1]
-  def clock(7), do: [1, 0, 1, 0, 0, 1, 0]
-  def clock(8), do: [1, 1, 1, 1, 1, 1, 1]
-  def clock(9), do: [1, 1, 1, 1, 0, 1, 0]
-
-  def fun_stuff() do
-    Display.set(List.duplicate(0, 7))
-    Display.set(update_index(6, 1))
-    Display.set(update_index(5, 1))
-    Display.set(update_index(4, 1))
-    Display.set(update_index(3, 1))
-    Display.set(update_index(2, 1))
-    Display.set(update_index(1, 1))
-    Display.set(update_index(0, 1))
-    Display.delay(1000)
-    Display.set(update_index(0, 0))
-    Display.set(update_index(1, 0))
-    Display.set(update_index(2, 0))
-    Display.set(update_index(3, 0))
-    Display.set(update_index(4, 0))
-    Display.set(update_index(5, 0))
-    Display.set(update_index(6, 0))
-  end
-
-  def count() do
-    Display.set(clock(0))
-    Display.delay(300)
-    Display.set(clock(1))
-    Display.delay(300)
-    Display.set(clock(2))
-    Display.delay(300)
-    Display.set(clock(3))
-    Display.delay(300)
-    Display.set(clock(4))
-    Display.delay(300)
-    Display.set(clock(5))
-    Display.delay(300)
-    Display.set(clock(6))
-    Display.delay(300)
-    Display.set(clock(7))
-    Display.delay(300)
-    Display.set(clock(8))
-    Display.delay(300)
-    Display.set(clock(9))
-    Display.delay(1000)
-    Display.set(clock(9))
-    Display.delay(300)
-    Display.set(clock(8))
-    Display.delay(300)
-    Display.set(clock(7))
-    Display.delay(300)
-    Display.set(clock(6))
-    Display.delay(300)
-    Display.set(clock(5))
-    Display.delay(300)
-    Display.set(clock(4))
-    Display.delay(300)
-    Display.set(clock(3))
-    Display.delay(300)
-    Display.set(clock(2))
-    Display.delay(300)
-    Display.set(clock(1))
-    Display.delay(300)
-    Display.set(clock(0))
-  end
-
-  def update_index(index, value) do
-    List.duplicate(nil, 7) |> List.insert_at(index, value)
-  end
+  def digit(0), do: [1, 1, 1, 0, 1, 1, 1]
+  def digit(1), do: [0, 0, 1, 0, 0, 1, 0]
+  def digit(2), do: [1, 0, 1, 1, 1, 0, 1]
+  def digit(3), do: [1, 0, 1, 1, 0, 1, 1]
+  def digit(4), do: [0, 1, 1, 1, 0, 1, 0]
+  def digit(5), do: [1, 1, 0, 1, 0, 1, 1]
+  def digit(6), do: [1, 1, 0, 1, 1, 1, 1]
+  def digit(7), do: [1, 0, 1, 0, 0, 1, 0]
+  def digit(8), do: [1, 1, 1, 1, 1, 1, 1]
+  def digit(9), do: [1, 1, 1, 1, 0, 1, 0]
 end
