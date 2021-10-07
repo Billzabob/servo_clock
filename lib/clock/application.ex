@@ -5,8 +5,6 @@ defmodule Clock.Application do
 
   use Application
 
-  import Supervisor
-
   alias Clock.Display
 
   def start(_type, _args) do
@@ -16,12 +14,44 @@ defmodule Clock.Application do
 
     children = [
       # Children for all targets
-      child_spec({ServoKit, name: S2, address: 0x41}, id: S2),
-      child_spec({ServoKit, name: S1, address: 0x40}, id: S1),
-      child_spec({Display, name: D1, servo: S1, channel_offset: 0, calibration: [-11, -7, 5, 1, -1, -2, -8]}, id: D1),
-      child_spec({Display, name: D2, servo: S1, channel_offset: 8, calibration: [0, 0, 0, 0, 0, 0, 0]}, id: D2),
-      child_spec({Display, name: D3, servo: S2, channel_offset: 0, calibration: [0, 0, 0, 0, 0, 0, 0]}, id: D3),
-      child_spec({Display, name: D4, servo: S2, channel_offset: 8, calibration: [0, 0, 0, 0, 0, 0, 0]}, id: D4),
+      Supervisor.child_spec({ServoKit, name: S2, address: 0x41}, id: S2),
+      Supervisor.child_spec({ServoKit, name: S1, address: 0x40}, id: S1),
+      Supervisor.child_spec(
+        {Display,
+         name: D1,
+         servo: S1,
+         channel_offset: 0,
+         calibration_max: [8.85, 9.15, 9.45, 9.65, 9.25, 9.75, 9.76],
+         calibration_min: [4.05, 4.65, 4.95, 4.95, 4.35, 5.05, 4.35]},
+        id: D1
+      ),
+      Supervisor.child_spec(
+        {Display,
+         name: D2,
+         servo: S1,
+         channel_offset: 8,
+         calibration_max: List.duplicate(9.45, 7),
+         calibration_min: List.duplicate(4.95, 7)},
+        id: D2
+      ),
+      Supervisor.child_spec(
+        {Display,
+         name: D3,
+         servo: S2,
+         channel_offset: 0,
+         calibration_max: [8.65, 9.15, 9.75, 9.75, 9.75, 9.95, 9.15],
+         calibration_min: [4.35, 4.65, 5.25, 4.95, 4.95, 5.25, 4.55]},
+        id: D3
+      ),
+      Supervisor.child_spec(
+        {Display,
+         name: D4,
+         servo: S2,
+         channel_offset: 8,
+         calibration_max: [9.75, 9.45, 9.45, 8.55, 9.75, 8.55, 8.25],
+         calibration_min: [4.95, 4.55, 4.35, 3.95, 4.95, 3.95, 4.05]},
+        id: D4
+      ),
       Clock
     ]
 

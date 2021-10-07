@@ -3,32 +3,26 @@ defmodule Clock.Display do
 
   require Logger
 
-  @min_duty_cycle 2.7
-  @max_duty_cycle 12.0
-  @min_angle 0
-  @max_angle 186
-
-  defstruct(
-    calibration: List.duplicate(0, 7),
-    servo: nil,
-    channel_offset: 0,
-    state: List.duplicate(0, 7)
-  )
+  defstruct [:calibration_max, :calibration_min, :servo, :channel_offset, :state]
 
   def start_link(opts),
     do: GenServer.start_link(__MODULE__, opts, name: opts[:name] || __MODULE__)
 
   def get(name), do: GenServer.call(name, :get)
   def set(name, state, milliseconds \\ 100), do: GenServer.cast(name, {:set, state, milliseconds})
-  def get_calibration(name), do: GenServer.call(name, :get_calibration)
-  def set_calibration(name, offsets), do: GenServer.cast(name, {:set_calibration, offsets})
-  def adjust_calibration(name, index, angle), do: GenServer.cast(name, {:adjust_calibration, index, angle})
+  def get_calibration_max(name), do: GenServer.call(name, :get_calibration_max)
+  def get_calibration_min(name), do: GenServer.call(name, :get_calibration_min)
+  def set_calibration_max(name, offsets), do: GenServer.cast(name, {:set_calibration_max, offsets})
+  def set_calibration_min(name, offsets), do: GenServer.cast(name, {:set_calibration_min, offsets})
+  def adjust_calibration_max(name, index, angle), do: GenServer.cast(name, {:adjust_calibration_max, index, angle})
+  def adjust_calibration_min(name, index, angle), do: GenServer.cast(name, {:adjust_calibration_min, index, angle})
   def delay(name, milliseconds \\ 100), do: GenServer.cast(name, {:set, List.duplicate(nil, 7), milliseconds})
 
   def init(opts) do
     state =
       __struct__(
-        calibration: opts[:calibration],
+        calibration_max: opts[:calibration_max],
+        calibration_min: opts[:calibration_min],
         servo: opts[:servo],
         channel_offset: opts[:channel_offset],
         state: List.duplicate(0, 7)
@@ -44,17 +38,27 @@ defmodule Clock.Display do
     {:noreply, end_state}
   end
 
-  def handle_cast({:set_calibration, offsets}, state) do
-    {:noreply, %{state | calibration: offsets}}
+  def handle_cast({:set_calibration_max, offsets}, state) do
+    {:noreply, %{state | calibration_max: offsets}}
   end
 
-  def handle_cast({:adjust_calibration, index, angle}, state) do
-    adjusted_calibration = List.update_at(state.calibration, index, &(&1 + angle))
-    {:noreply, %{state | calibration: adjusted_calibration}}
+  def handle_cast({:set_calibration_min, offsets}, state) do
+    {:noreply, %{state | calibration_min: offsets}}
+  end
+
+  def handle_cast({:adjust_calibration_max, index, angle}, state) do
+    adjusted_calibration = List.update_at(state.calibration_max, index, &(&1 + angle))
+    {:noreply, %{state | calibration_max: adjusted_calibration}}
+  end
+
+  def handle_cast({:adjust_calibration_min, index, angle}, state) do
+    adjusted_calibration = List.update_at(state.calibration_min, index, &(&1 + angle))
+    {:noreply, %{state | calibration_min: adjusted_calibration}}
   end
 
   def handle_call(:get, _from, state), do: {:reply, state, state}
-  def handle_call(:get_calibration, _from, state), do: {:reply, state.calibration, state}
+  def handle_call(:get_calibration_max, _from, state), do: {:reply, state.calibration_max, state}
+  def handle_call(:get_calibration_min, _from, state), do: {:reply, state.calibration_min, state}
 
   defp display(state, end_state, milliseconds) do
     start_time = System.monotonic_time(:millisecond)
@@ -100,13 +104,12 @@ defmodule Clock.Display do
   end
 
   defp set_to(end_state, state) do
-    end_state
-    |> invert_some()
-    |> Enum.map(fn n -> n * 90 + 45 end)
-    |> Enum.zip_with(state.calibration, &+/2)
-    |> Enum.with_index()
-    |> Enum.each(fn {n, ch} ->
-      ServoKit.set_pwm_duty_cycle(state.servo, angle_to_duty_cycle(n), ch: ch + state.channel_offset)
+    angles = invert_some(end_state)
+
+    [angles, 0..6, state.calibration_min, state.calibration_max]
+    |> Enum.zip()
+    |> Enum.each(fn {n, ch, min, max} ->
+      ServoKit.set_pwm_duty_cycle(state.servo, angle_to_duty_cycle(n, min, max), ch: ch + state.channel_offset)
     end)
   end
 
@@ -117,8 +120,8 @@ defmodule Clock.Display do
     |> List.update_at(6, fn _ -> 1 - Enum.at(state, 6) end)
   end
 
-  defp angle_to_duty_cycle(angle),
-    do: angle |> map({@min_angle, @max_angle}, {@min_duty_cycle, @max_duty_cycle})
+  defp angle_to_duty_cycle(angle, min, max),
+    do: angle |> map({0, 1}, {min, max})
 
   defp map(x, {in_min, in_max}, {out_min, out_max})
        when is_number(x) and
